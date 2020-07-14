@@ -1,53 +1,40 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Timers;
+using System.Threading;
 
 class Program
 {
-    public class MonitorFiles
+    public class MonitorDirectoryFiles
     {
-        private static Timer timer;
-        private static int numberOfFiles;
-        private static int numberOfFilesFound;
-        private static string monitoredDir;
-        private static bool FilesFound;
-
-        public static void MonitorDirectory(string _monitoredDir, int _numberOfFIles)
+        public static bool MonitorDirectory(string monitoredDir, int numberOfFilesNeeded, int timeout)
         {
-            numberOfFiles = _numberOfFIles;
-            monitoredDir = _monitoredDir;
-            FilesFound = false;
+            bool filesFound = false;
+            int numberOfSeconds = 0;
 
-            timer = new System.Timers.Timer();
-            timer.Interval = 5000;
-            timer.Elapsed += OnTimedEvent;
-            timer.AutoReset = true;
-            timer.Enabled = true;
-
-            if (FilesFound)
+            do
             {
-                return;
-            }
+                int numberOfFilesFound = Directory.GetFiles(monitoredDir, "*", SearchOption.TopDirectoryOnly).Length;
+                Console.WriteLine("{0} has {1} files at {2} seconds", monitoredDir, numberOfFilesFound, numberOfSeconds);
+                if (numberOfFilesFound >= numberOfFilesNeeded)
+                {
+                    return true;
+                }
 
-            Console.WriteLine("Press the Enter key to exit anytime... ");
-            Console.ReadLine();
-        }
+                Thread.Sleep(1000);
+                numberOfSeconds++;
 
-        private static void OnTimedEvent(Object source, System.Timers.ElapsedEventArgs e)
-        {
-            // Check directory for number of files
-            numberOfFilesFound = Directory.GetFiles(monitoredDir, "*", SearchOption.TopDirectoryOnly).Length;
-            Console.WriteLine("Directory Checked: {0} number of files {1}", e.SignalTime, numberOfFilesFound);
-            if (numberOfFiles == numberOfFilesFound)
-            {
-                FilesFound = true;
-            }
+            } while ((filesFound == false) && (numberOfSeconds < timeout));
+
+            return false;
         }
     }
 
     static void Main()
     {
-        MonitorFiles.MonitorDirectory(@"C:\Temp", 7);
+        String JobDirectory = @"C:\SSMCharacterizationHandler\Input Buffer";
+        String Job = "1307106_202002181303";
+        String InputBufferDir = JobDirectory + @"\" + Job;
+        MonitorDirectoryFiles.MonitorDirectory(InputBufferDir, 6, 60);
+        Console.WriteLine("File list complete");
     }
 }
